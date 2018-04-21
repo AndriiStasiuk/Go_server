@@ -19,8 +19,8 @@ type Product struct {
     Status     string `sql:"status"`
 }
 
-var db *gorm.DB
-var err error
+var db	*gorm.DB
+var err	error
 
 func main() {
 	router := mux.NewRouter()
@@ -30,7 +30,7 @@ func main() {
 	password := os.Getenv("PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
-	connStr := fmt.Sprint("host=%v user=%v dbname=%v sslmode=disable password=%v", host, user, dbName, password)
+	connStr := fmt.Sprintf("host=%v user=%v dbname=%v sslmode=enable password=%v", host, user, dbName, password)
 
 	db, err := gorm.Open("postgres", connStr)
 
@@ -50,12 +50,16 @@ func main() {
 
 func GetResources(w http.ResponseWriter, r *http.Request) {
 	var resources []Product
-	db.Find(&resources)
-	json.NewEncoder(w).Encode(&resources)
 
-	err := json.NewEncoder(w).Encode(&resources)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := db.Find(&resources).Error; err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(&resources); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
 	}
 }
 
@@ -63,24 +67,29 @@ func GetResource(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var resource Product
 	db.First(&resource, params["key"])
-	json.NewEncoder(w).Encode(&resource)
-
-	err := json.NewEncoder(w).Encode(&resource)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+	if err := json.NewEncoder(w).Encode(&resource); err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(err.Error()))
+		return
 	}
+	json.NewEncoder(w).Encode(&resource)
 }
 
 func CreateResource(w http.ResponseWriter, r *http.Request) {
 	var resource Product
-	json.NewDecoder(r.Body).Decode(&resource)
-	db.Create(&resource)
-	json.NewEncoder(w).Encode(&resource)
-
-	err := json.NewEncoder(w).Encode(&resource)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&resource); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
 	}
+
+	if err := db.Create(&resource).Error; err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	json.NewEncoder(w).Encode(&resource)
 }
 
 func DeleteResource(w http.ResponseWriter, r *http.Request) {
@@ -90,11 +99,14 @@ func DeleteResource(w http.ResponseWriter, r *http.Request) {
 	db.Delete(&resource)
 
 	var resources []Product
-	db.Find(&resources)
-	json.NewEncoder(w).Encode(&resources)
+	if err := db.Find(&resources).Error; err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-	err := json.NewEncoder(w).Encode(&resources)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
+	if err := json.NewEncoder(w).Encode(&resources); err != nil {
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte(err.Error()))
+		return
 	}
 }
