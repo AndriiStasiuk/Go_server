@@ -21,7 +21,7 @@ type Log struct	{
 
 type User struct {
 
-	Id              int         `sql:"id"`
+	Id              int64       `sql:"id"`
 	CardKey         int64       `sql:"card_key"`
 	FirstName       string      `sql:"first_name"`
 	LastName        string      `sql:"last_name"`
@@ -57,7 +57,9 @@ func main() {
 	router.HandleFunc("/std/create", CreateResource).Methods("POST")
 	router.HandleFunc("/std/delete/{id}", DeleteResource).Methods("DELETE")
 
-	http.ListenAndServe("localhost:8000", router)
+	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
+
+	http.ListenAndServe(":8000", router)
 
 }
 
@@ -79,11 +81,19 @@ func GetResource(w http.ResponseWriter, r *http.Request) {
 	db.First(&resource, params["card_key"])
 	i,_:=strconv.ParseInt(params["card_key"], 10, 64)
 	if err := db.Where("card_key = ?", i).First(&resource).Error; err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(err.Error()))
+		json.NewEncoder(w).Encode(http.StatusNotFound)
 		return
 	}
-	json.NewEncoder(w).Encode(&resource)
+	if err := db.Where("status = ?", 1).First(&resource).Error; err != nil {
+		json.NewEncoder(w).Encode(http.StatusForbidden)
+		return
+	}
+
+	if err := db.Where("status = ?", 0).First(&resource).Error; err != nil {
+	json.NewEncoder(w).Encode(http.StatusOK)
+	return
+	}
+
 }
 
 func CreateResource(w http.ResponseWriter, r *http.Request) {
@@ -103,17 +113,30 @@ func CreateResource(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&resource)
 }
 
-
 func DeleteResource(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	u := User{Id: id}
-	if err := db.Find(&u).Error; err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+
+	user := User{Id: id}
+	if err := db.Delete(&user); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 }
+
+func GetLogs(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	var resource Log
+	db.First(&resource, params["id"])
+	if err := db.Where("id = ?", params).First(&resource).Error; err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	json.NewEncoder(w).Encode(&resource)
+}
+
