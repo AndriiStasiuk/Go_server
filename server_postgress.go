@@ -59,7 +59,7 @@ func main() {
 
 	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
 
-	http.ListenAndServe(":os.Getenv("PORT")", router)
+	http.ListenAndServe(":" + os.Getenv("PORT"), router)
 
 }
 
