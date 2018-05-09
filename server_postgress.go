@@ -21,12 +21,12 @@ type Log struct	{
 
 type User struct {
 
-	Id              int64       `sql:"id"`
-	CardKey         int64       `sql:"card_key"`
-	FirstName       string      `sql:"first_name"`
-	LastName        string      `sql:"last_name"`
-	Status          string      `sql:"status"`
-	LastCheckedIn   time.Time	 `sql:"last_checked_in"`
+	Id              int64       `sql:"id" json:"id"`
+	CardKey         int64       `sql:"card_key" json:"card_key"`
+	FirstName       string      `sql:"first_name" json:"first_name"`
+	LastName        string      `sql:"last_name" json:"last_name"`
+	Status          string      `sql:"status" json:"status"`
+	LastCheckedIn   time.Time   `sql:"last_checked_in" json:"last_checked_in"`
 }
 
 
