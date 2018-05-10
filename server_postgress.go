@@ -60,7 +60,7 @@ func main() {
 	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
 
 	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
-	router.HandleFunc("/std/user/update/{id}",UpdateUser).Methods("PUT")
+	
 
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
 
