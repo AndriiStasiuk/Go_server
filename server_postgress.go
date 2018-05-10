@@ -92,14 +92,15 @@ func GetResources(w http.ResponseWriter, r *http.Request) {
 func GetResource(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var resource User
-	db.First(&resource, params["card_key"])
-	i,_:=strconv.ParseInt(params["card_key"], 10, 64)
-	if err := db.Where("card_key = ?", i).First(&resource).Error; err != nil {
-		WriteResult(w, http.StatusNotFound,http.StatusNotFound)
+	i, err :=strconv.ParseInt(params["card_key"], 10, 64)
+
+	if err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := db.Where("status = ?", 1).First(&resource).Error; err != nil {
-		WriteResult(w, http.StatusForbidden, http.StatusForbidden)
+
+	if err := db.Where("card_key = ?", i).First(&resource).Error; err != nil {
+		WriteResult(w, http.StatusNotFound,http.StatusNotFound)
 		return
 	}
 
@@ -108,7 +109,10 @@ func GetResource(w http.ResponseWriter, r *http.Request) {
 	return
 	}
 
+	WriteResult(w, http.StatusForbidden, http.StatusForbidden)
+
 }
+
 
 func CreateResource(w http.ResponseWriter, r *http.Request) {
 	var resource User
