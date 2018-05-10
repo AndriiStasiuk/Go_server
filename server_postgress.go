@@ -52,7 +52,7 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/options", Options).Methods("OPTIONS")
+	router.HandleFunc("/*", Options).Methods("OPTIONS")
 
 	router.HandleFunc("/std/users", GetResources).Methods("GET")
 	router.HandleFunc("/std/user/{card_key}", GetResource).Methods("GET")
