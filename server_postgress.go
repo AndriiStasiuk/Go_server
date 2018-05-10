@@ -13,7 +13,7 @@ import (
 )
 
 type Log struct	{
-	Id			int64		`sql:"id"`
+	Id		int64		`sql:"id"`
 	UserId		int64		`sql:"user_id"`
 	CreatedAt	time.Time	`sql:"created_at"`
 	EventType	string		`sql:"event_type"`
@@ -52,26 +52,40 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/std", GetResources).Methods("GET")
+	router.HandleFunc("/options", Options).Methods("OPTIONS")
+
+	router.HandleFunc("/std/users", GetResources).Methods("GET")
 	router.HandleFunc("/std/user/{card_key}", GetResource).Methods("GET")
-	router.HandleFunc("/std/create", CreateResource).Methods("POST")
-	router.HandleFunc("/std/delete/{id}", DeleteResource).Methods("DELETE")
+	router.HandleFunc("/std/user/create", CreateResource).Methods("POST")
+	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
 
 	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
+	router.HandleFunc("/std/user/update/{id}",UpdateUser).Methods("PUT")
 
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
 
 }
 
+func Options(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS, PATCH, DELETE")
+}
+
+func WriteResult(w http.ResponseWriter, code int, data interface{}){
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(data)
+}
+
 func GetResources(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	if err := db.Find(&users).Error; err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteResult(w, http.StatusInternalServerError,err.Error())
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	WriteResult(w, http.StatusOK,users)
 
 }
 
@@ -81,16 +95,16 @@ func GetResource(w http.ResponseWriter, r *http.Request) {
 	db.First(&resource, params["card_key"])
 	i,_:=strconv.ParseInt(params["card_key"], 10, 64)
 	if err := db.Where("card_key = ?", i).First(&resource).Error; err != nil {
-		json.NewEncoder(w).Encode(http.StatusNotFound)
+		WriteResult(w, http.StatusNotFound,http.StatusNotFound)
 		return
 	}
 	if err := db.Where("status = ?", 1).First(&resource).Error; err != nil {
-		json.NewEncoder(w).Encode(http.StatusForbidden)
+		WriteResult(w, http.StatusForbidden, http.StatusForbidden)
 		return
 	}
 
 	if err := db.Where("status = ?", 0).First(&resource).Error; err != nil {
-	json.NewEncoder(w).Encode(http.StatusOK)
+	WriteResult(w,http.StatusOK,http.StatusOK)
 	return
 	}
 
@@ -99,31 +113,29 @@ func GetResource(w http.ResponseWriter, r *http.Request) {
 func CreateResource(w http.ResponseWriter, r *http.Request) {
 	var resource User
 	if err := json.NewDecoder(r.Body).Decode(&resource); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		WriteResult(w, http.StatusBadRequest,err.Error())
 		return
 	}
 	defer r.Body.Close()
 
 	if err := db.Create(&resource).Error; err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		WriteResult(w, http.StatusBadRequest,err.Error())
 		return
 	}
-	json.NewEncoder(w).Encode(&resource)
+	WriteResult(w, http.StatusOK,resource)
 }
 
 func DeleteResource(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		WriteResult(w,http.StatusNotFound,err.Error())
 		return
 	}
 
 	user := User{Id: id}
 	if err := db.Delete(&user); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		WriteResult(w,http.StatusBadRequest,err.Error)
 		return
 	}
 }
@@ -133,10 +145,8 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	var resource Log
 	db.First(&resource, params["id"])
 	if err := db.Where("id = ?", params).First(&resource).Error; err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(err.Error()))
+		WriteResult(w, http.StatusNotFound,err.Error())
 		return
 	}
-	json.NewEncoder(w).Encode(&resource)
+	WriteResult(w, http.StatusOK,resource)
 }
-
