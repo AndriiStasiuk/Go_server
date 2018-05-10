@@ -54,9 +54,9 @@ func main() {
 
 	router.HandleFunc("/*", Options).Methods("OPTIONS")
 
-	router.HandleFunc("/std/users", GetResources).Methods("GET")
+	router.HandleFunc("/std/user", GetResources).Methods("GET")
 	router.HandleFunc("/std/user/{card_key}", GetResource).Methods("GET")
-	router.HandleFunc("/std/user/create", CreateResource).Methods("POST")
+	router.HandleFunc("/std/user", CreateResource).Methods("POST")
 	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
 
 	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
