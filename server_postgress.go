@@ -150,7 +150,7 @@ func UpdateResource(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error())
+		WriteResult(w, http.StatusNotFound, err.Error())
 		return
 	}
 
