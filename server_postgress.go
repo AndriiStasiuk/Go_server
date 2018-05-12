@@ -142,6 +142,7 @@ func DeleteResource(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w,http.StatusBadRequest,err.Error)
 		return
 	}
+	WriteResult(w,http.StatusOK,id)
 }
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
