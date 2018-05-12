@@ -58,7 +58,8 @@ func main() {
 	router.HandleFunc("/std/user/{card_key}", GetResource).Methods("GET")
 	router.HandleFunc("/std/user", CreateResource).Methods("POST")
 	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
-
+	router.HandleFunc("/std/user/update/{id}", UpdateResource).Methods("PUT")
+	
 	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
 	
 
@@ -143,6 +144,31 @@ func DeleteResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	WriteResult(w,http.StatusOK,id)
+}
+
+func UpdateResource(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var resource User
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&resource); err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	resource.Id = id
+	if err := db.Save(&resource).Error; err != nil {
+		WriteResult(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	WriteResult(w, http.StatusOK, resource)
 }
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
