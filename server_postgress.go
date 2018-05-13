@@ -52,12 +52,12 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/*", Options).Methods("OPTIONS")
-
+        router.HandleFunc("/{any:.*}", Options).Methods("OPTIONS")
+	
 	router.HandleFunc("/std/user", GetResources).Methods("GET")
 	router.HandleFunc("/std/user/{card_key}", GetResource).Methods("GET")
 	router.HandleFunc("/std/user", CreateResource).Methods("POST")
-	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE","OPTIONS")
+	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
 	router.HandleFunc("/std/user/update/{id}", UpdateResource).Methods("PUT")
 	
 	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET","OPTIONS")
