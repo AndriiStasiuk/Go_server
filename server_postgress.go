@@ -134,13 +134,12 @@ func DeleteResource(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
-		WriteResult(w,http.StatusNotFound,err.Error())
+		WriteResult(w, http.StatusNotFound, err.Error())
 		return
 	}
-
 	user := User{Id: id}
-	if err := db.Delete(&user); err != nil {
-		WriteResult(w,http.StatusBadRequest,err.Error)
+	if err := db.Delete(&user).Error; err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error)
 		return
 	}
 	WriteResult(w,http.StatusOK,id)
