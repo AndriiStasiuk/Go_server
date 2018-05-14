@@ -59,8 +59,11 @@ func main() {
 	router.HandleFunc("/std/user", CreateResource).Methods("POST")
 	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
 	router.HandleFunc("/std/user/update/{id}", UpdateResource).Methods("PUT")
+	router.HandleFunc("/std/user/blocked/{id}",BlockedUser).Methods("PUT")
+	router.HandleFunc("/std/user/unblocked/{id}",UnblockedUser).Methods("PUT")
+
 	
-	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET","OPTIONS")
+	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
 	
 
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
@@ -168,6 +171,57 @@ func UpdateResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteResult(w, http.StatusOK, resource)
+}
+
+func BlockedUser(w http.ResponseWriter, r *http.Request)  {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		WriteResult(w, http.StatusNotFound, err.Error())
+		return
+	}
+	var user User
+
+	user.Id = id
+
+	if err := db.First(&user).Error; err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user.Status = "0"
+
+	if err := db.Save(&user).Error; err != nil {
+		WriteResult(w, http.StatusInternalServerError, err)
+		return
+	}
+	WriteResult(w,http.StatusOK,user)
+
+}
+
+func UnblockedUser(w http.ResponseWriter, r *http.Request)  {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		WriteResult(w, http.StatusNotFound, err.Error())
+		return
+	}
+	var user User
+
+	user.Id = id
+
+	if err := db.First(&user).Error; err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user.Status = "1"
+
+	if err := db.Save(&user).Error; err != nil {
+		WriteResult(w, http.StatusInternalServerError, err)
+		return
+	}
+	WriteResult(w,http.StatusOK,user)
 }
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
