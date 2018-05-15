@@ -246,6 +246,12 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if resource.Status == "1" {
+		resource.LastCheckedIn = time.Now()
+
+		if err := db.Save(&resource).Error; err != nil {
+			WriteResult(w, http.StatusInternalServerError, err)
+			return
+		}
 		WriteResult(w, http.StatusOK, nil)
 	} else {
 		WriteResult(w, http.StatusForbidden, nil)
