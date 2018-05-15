@@ -59,10 +59,12 @@ func main() {
 	router.HandleFunc("/std/user", CreateResource).Methods("POST")
 	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
 	router.HandleFunc("/std/user/update/{id}", UpdateResource).Methods("PUT")
+	
 	router.HandleFunc("/std/user/blocked/{id}",BlockedUser).Methods("PUT")
 	router.HandleFunc("/std/user/unblocked/{id}",UnblockedUser).Methods("PUT")
 	
 	router.HandleFunc("/std/auth",AuthUser).Methods("POST")
+	router.HandleFunc("/std/exit",UserExit).Methods("POST")
 	
 
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
@@ -247,4 +249,12 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusForbidden, nil)
 	}
 
+}
+
+func UserExit(w http.ResponseWriter, r *http.Request)  {
+	log := Log{UserId: 0, CreatedAt: time.Now(), EventType: 9}
+	if err := db.Create(&log).Error; err != nil {
+		WriteResult(w, http.StatusBadRequest,err.Error())
+	}
+	WriteResult(w,http.StatusOK,nil)
 }
