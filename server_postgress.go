@@ -66,6 +66,8 @@ func main() {
 	router.HandleFunc("/std/auth",AuthUser).Methods("POST")
 	router.HandleFunc("/std/exit",UserExit).Methods("POST")
 	
+	router.HandleFunc("/std/logs", GetLogs).Methods("GET")
+	
 
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
 
@@ -258,3 +260,15 @@ func UserExit(w http.ResponseWriter, r *http.Request)  {
 	}
 	WriteResult(w,http.StatusOK,nil)
 }
+
+func GetLogs(w http.ResponseWriter, r *http.Request) {
+	var logs []Log
+	if err := db.Find(&logs).Error; err != nil {
+		WriteResult(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	WriteResult(w, http.StatusOK, logs)
+
+}
+
