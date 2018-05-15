@@ -88,6 +88,13 @@ func WriteResult(w http.ResponseWriter, code int, data interface{}) {
 	}
 }
 
+func Event(UserId int64, EventType int) {
+	log := Log{UserId: UserId, CreatedAt: time.Now(), EventType: EventType}
+	if err := db.Create(&log).Error; err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
 func GetResources(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	if err := db.Find(&users).Error; err != nil {
@@ -164,10 +171,9 @@ func CreateResource(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	log := Log{UserId: resource.Id, CreatedAt: time.Now(), EventType: 6}
-	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error())
-	}
+
+	go Event(resource.Id,6)
+
 	WriteResult(w, http.StatusOK, resource)
 }
 
@@ -184,10 +190,7 @@ func DeleteResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 8}
-	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error())
-	}
+	go Event(id,8)
 
 	WriteResult(w, http.StatusOK, id)
 }
@@ -213,10 +216,7 @@ func UpdateResource(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusInternalServerError, err)
 		return
 	}
-	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 7}
-	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error())
-	}
+	go Event(id,7)
 
 	WriteResult(w, http.StatusOK, resource)
 }
@@ -243,10 +243,8 @@ func BlockedUser(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusInternalServerError, err)
 		return
 	}
-	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 4}
-	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error())
-	}
+
+	go Event(id,4)
 
 	WriteResult(w, http.StatusOK, user)
 
@@ -274,10 +272,9 @@ func UnblockedUser(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusInternalServerError, err)
 		return
 	}
-	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 5}
-	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error())
-	}
+
+	go Event(id,5)
+
 	WriteResult(w, http.StatusOK, user)
 }
 
@@ -293,10 +290,9 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err := db.Where("card_key = ?", resource.CardKey).First(&resource).Error; err != nil {
-		log := Log{UserId: 0, CreatedAt: time.Now(), EventType: 3}
-		if err := db.Create(&log).Error; err != nil {
-			WriteResult(w, http.StatusBadRequest, err.Error())
-		}
+
+		go Event(0,3)
+
 		WriteResult(w, http.StatusNotFound, nil)
 		return
 	}
@@ -307,26 +303,22 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 			WriteResult(w, http.StatusInternalServerError, err)
 			return
 		}
-		log := Log{UserId: resource.Id, CreatedAt: time.Now(), EventType: 1}
-		if err := db.Create(&log).Error; err != nil {
-			WriteResult(w, http.StatusBadRequest, err.Error())
-		}
+
+		go Event(resource.Id,1)
+
 		WriteResult(w, http.StatusOK, nil)
 	} else {
-		log := Log{UserId: resource.Id, CreatedAt: time.Now(), EventType: 2}
-		if err := db.Create(&log).Error; err != nil {
-			WriteResult(w, http.StatusBadRequest, err.Error())
-		}
+
+		go Event(resource.Id,2)
+
 		WriteResult(w, http.StatusForbidden, nil)
 	}
 
 }
 
 func UserExit(w http.ResponseWriter, r *http.Request) {
-	log := Log{UserId: 0, CreatedAt: time.Now(), EventType: 9}
-	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error())
-	}
+
+	go Event(0,9)
+
 	WriteResult(w, http.StatusOK, nil)
 }
-
