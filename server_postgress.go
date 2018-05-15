@@ -67,7 +67,7 @@ func main() {
 	router.HandleFunc("/std/exit",UserExit).Methods("POST")
 	
 	router.HandleFunc("/std/logs", GetLogs).Methods("GET")
-	
+	router.HandleFunc("/std/logs/{user_id}", GetLog).Methods("GET")
 
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
 
@@ -99,6 +99,24 @@ func GetResources(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func GetLog(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	var logs []Log
+	i, err := strconv.ParseInt(params["user_id"], 10, 64)
+
+	if err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := db.Where("user_id = ?", i).Find(&logs).Error; err != nil {
+		WriteResult(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	WriteResult(w, http.StatusOK, logs)
+
+}
+
 func GetLogs(w http.ResponseWriter, r *http.Request) {
 	var logs []Log
 	if err := db.Find(&logs).Error; err != nil {
@@ -113,7 +131,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 func GetResource(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var resource User
-	i, err :=strconv.ParseInt(params["card_key"], 10, 64)
+	i, err := strconv.ParseInt(params["card_key"], 10, 64)
 
 	if err != nil {
 		WriteResult(w, http.StatusBadRequest, err.Error())
@@ -121,19 +139,18 @@ func GetResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := db.Where("card_key = ?", i).First(&resource).Error; err != nil {
-		WriteResult(w, http.StatusNotFound,http.StatusNotFound)
+		WriteResult(w, http.StatusNotFound, http.StatusNotFound)
 		return
 	}
 
 	if err := db.Where("status = ?", 0).First(&resource).Error; err != nil {
-		WriteResult(w,http.StatusOK,http.StatusOK)
+		WriteResult(w, http.StatusOK, http.StatusOK)
 		return
 	}
 
 	WriteResult(w, http.StatusForbidden, http.StatusForbidden)
 
 }
-
 
 func CreateResource(w http.ResponseWriter, r *http.Request) {
 	var resource User
@@ -147,9 +164,9 @@ func CreateResource(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	log := Log{UserId:resource.Id , CreatedAt: time.Now(), EventType: 6}
+	log := Log{UserId: resource.Id, CreatedAt: time.Now(), EventType: 6}
 	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest,err.Error())
+		WriteResult(w, http.StatusBadRequest, err.Error())
 	}
 	WriteResult(w, http.StatusOK, resource)
 }
@@ -169,10 +186,10 @@ func DeleteResource(w http.ResponseWriter, r *http.Request) {
 
 	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 8}
 	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest,err.Error())
+		WriteResult(w, http.StatusBadRequest, err.Error())
 	}
 
-	WriteResult(w,http.StatusOK,id)
+	WriteResult(w, http.StatusOK, id)
 }
 
 func UpdateResource(w http.ResponseWriter, r *http.Request) {
@@ -198,13 +215,13 @@ func UpdateResource(w http.ResponseWriter, r *http.Request) {
 	}
 	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 7}
 	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest,err.Error())
+		WriteResult(w, http.StatusBadRequest, err.Error())
 	}
 
 	WriteResult(w, http.StatusOK, resource)
 }
 
-func BlockedUser(w http.ResponseWriter, r *http.Request)  {
+func BlockedUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
@@ -228,14 +245,14 @@ func BlockedUser(w http.ResponseWriter, r *http.Request)  {
 	}
 	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 4}
 	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest,err.Error())
+		WriteResult(w, http.StatusBadRequest, err.Error())
 	}
 
-	WriteResult(w,http.StatusOK,user)
+	WriteResult(w, http.StatusOK, user)
 
 }
 
-func UnblockedUser(w http.ResponseWriter, r *http.Request)  {
+func UnblockedUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
@@ -259,9 +276,9 @@ func UnblockedUser(w http.ResponseWriter, r *http.Request)  {
 	}
 	log := Log{UserId: id, CreatedAt: time.Now(), EventType: 5}
 	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest,err.Error())
+		WriteResult(w, http.StatusBadRequest, err.Error())
 	}
-	WriteResult(w,http.StatusOK,user)
+	WriteResult(w, http.StatusOK, user)
 }
 
 func AuthUser(w http.ResponseWriter, r *http.Request) {
@@ -276,11 +293,11 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err := db.Where("card_key = ?", resource.CardKey).First(&resource).Error; err != nil {
-		log := Log{UserId:0 , CreatedAt: time.Now(), EventType: 3}
+		log := Log{UserId: 0, CreatedAt: time.Now(), EventType: 3}
 		if err := db.Create(&log).Error; err != nil {
-			WriteResult(w, http.StatusBadRequest,err.Error())
+			WriteResult(w, http.StatusBadRequest, err.Error())
 		}
-		WriteResult(w, http.StatusNotFound,nil)
+		WriteResult(w, http.StatusNotFound, nil)
 		return
 	}
 
@@ -290,26 +307,26 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 			WriteResult(w, http.StatusInternalServerError, err)
 			return
 		}
-		log := Log{UserId:resource.Id , CreatedAt: time.Now(), EventType: 1}
+		log := Log{UserId: resource.Id, CreatedAt: time.Now(), EventType: 1}
 		if err := db.Create(&log).Error; err != nil {
-			WriteResult(w, http.StatusBadRequest,err.Error())
+			WriteResult(w, http.StatusBadRequest, err.Error())
 		}
 		WriteResult(w, http.StatusOK, nil)
 	} else {
-		log := Log{UserId:resource.Id , CreatedAt: time.Now(), EventType: 2}
+		log := Log{UserId: resource.Id, CreatedAt: time.Now(), EventType: 2}
 		if err := db.Create(&log).Error; err != nil {
-			WriteResult(w, http.StatusBadRequest,err.Error())
+			WriteResult(w, http.StatusBadRequest, err.Error())
 		}
 		WriteResult(w, http.StatusForbidden, nil)
 	}
 
 }
 
-func UserExit(w http.ResponseWriter, r *http.Request)  {
+func UserExit(w http.ResponseWriter, r *http.Request) {
 	log := Log{UserId: 0, CreatedAt: time.Now(), EventType: 9}
 	if err := db.Create(&log).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest,err.Error())
+		WriteResult(w, http.StatusBadRequest, err.Error())
 	}
-	WriteResult(w,http.StatusOK,nil)
+	WriteResult(w, http.StatusOK, nil)
 }
 
