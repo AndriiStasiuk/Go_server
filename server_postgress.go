@@ -61,9 +61,8 @@ func main() {
 	router.HandleFunc("/std/user/update/{id}", UpdateResource).Methods("PUT")
 	router.HandleFunc("/std/user/blocked/{id}",BlockedUser).Methods("PUT")
 	router.HandleFunc("/std/user/unblocked/{id}",UnblockedUser).Methods("PUT")
-
 	
-	router.HandleFunc("/std/logs/{id}", GetLogs).Methods("GET")
+	router.HandleFunc("/std/auth",AuthUser).Methods("POST")
 	
 
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
@@ -79,7 +78,9 @@ func WriteResult(w http.ResponseWriter, code int, data interface{}){
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(data)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	}
 }
 
 func GetResources(w http.ResponseWriter, r *http.Request) {
@@ -224,13 +225,26 @@ func UnblockedUser(w http.ResponseWriter, r *http.Request)  {
 	WriteResult(w,http.StatusOK,user)
 }
 
-func GetLogs(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	var resource Log
-	db.First(&resource, params["id"])
-	if err := db.Where("id = ?", params).First(&resource).Error; err != nil {
-		WriteResult(w, http.StatusNotFound,err.Error())
+func AuthUser(w http.ResponseWriter, r *http.Request) {
+
+	var resource User
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&resource);
+	if err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	WriteResult(w, http.StatusOK,resource)
+	defer r.Body.Close()
+
+	if err := db.Where("card_key = ?", resource.CardKey).First(&resource).Error; err != nil {
+		WriteResult(w, http.StatusNotFound,nil)
+		return
+	}
+
+	if resource.Status == "1" {
+		WriteResult(w, http.StatusOK, nil)
+	} else {
+		WriteResult(w, http.StatusForbidden, nil)
+	}
+
 }
