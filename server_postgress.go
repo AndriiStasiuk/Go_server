@@ -16,7 +16,7 @@ type Log struct	{
 	Id		int64		`sql:"id"`
 	UserId		int64		`sql:"user_id"`
 	CreatedAt	time.Time	`sql:"created_at"`
-	EventType	string		`sql:"event_type"`
+	EventType	int		`sql:"event_type"`
 }
 
 type User struct {
