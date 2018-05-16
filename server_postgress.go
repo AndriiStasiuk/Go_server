@@ -57,7 +57,7 @@ func main() {
 	router.HandleFunc("/std/user", GetResources).Methods("GET")
 	router.HandleFunc("/std/user/{card_key}", GetResource).Methods("GET")
 	router.HandleFunc("/std/user", CreateResource).Methods("POST")
-	router.HandleFunc("/std/user/delete/{id}", DeleteResource).Methods("DELETE")
+	router.HandleFunc("/std/user/deactivate/{id}", DeactiveUser).Methods("PUT")
 	router.HandleFunc("/std/user/update/{id}", UpdateResource).Methods("PUT")
 	
 	router.HandleFunc("/std/user/blocked/{id}",BlockedUser).Methods("PUT")
@@ -97,7 +97,7 @@ func Event(UserId int64, EventType int) {
 
 func GetResources(w http.ResponseWriter, r *http.Request) {
 	var users []User
-	if err := db.Find(&users).Error; err != nil {
+	if err := db.Where("active = ?",true).Find(&users).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -150,8 +150,8 @@ func GetResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.Where("status = ?", 0).First(&resource).Error; err != nil {
-		WriteResult(w, http.StatusOK, http.StatusOK)
+	if err := db.Where("status = ?", 0).Where("active", true).First(&resource).Error; err != nil {
+		WriteResult(w, http.StatusOK, resource)
 		return
 	}
 
@@ -177,23 +177,6 @@ func CreateResource(w http.ResponseWriter, r *http.Request) {
 	WriteResult(w, http.StatusOK, resource)
 }
 
-func DeleteResource(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
-	if err != nil {
-		WriteResult(w, http.StatusNotFound, err.Error())
-		return
-	}
-	user := User{Id: id}
-	if err := db.Delete(&user).Error; err != nil {
-		WriteResult(w, http.StatusBadRequest, err.Error)
-		return
-	}
-
-	go Event(id,8)
-
-	WriteResult(w, http.StatusOK, id)
-}
 
 func UpdateResource(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -298,15 +281,18 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if resource.Status == "1" {
-		resource.LastCheckedIn = time.Now()
-		if err := db.Save(&resource).Error; err != nil {
-			WriteResult(w, http.StatusInternalServerError, err)
-			return
+
+		if resource.Active == true{
+			resource.LastCheckedIn = time.Now()
+			if err := db.Save(&resource).Error; err != nil {
+				WriteResult(w, http.StatusInternalServerError, err)
+				return
+			}
+
+			go Event(resource.Id,1)
+
+			WriteResult(w, http.StatusOK, nil)
 		}
-
-		go Event(resource.Id,1)
-
-		WriteResult(w, http.StatusOK, nil)
 	} else {
 
 		go Event(resource.Id,2)
@@ -321,4 +307,33 @@ func UserExit(w http.ResponseWriter, r *http.Request) {
 	go Event(0,9)
 
 	WriteResult(w, http.StatusOK, nil)
+}
+
+func DeactiveUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		WriteResult(w, http.StatusNotFound, err.Error())
+		return
+	}
+	var user User
+
+	user.Id = id
+
+	if err := db.First(&user).Error; err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user.Active = false
+
+	if err := db.Save(&user).Error; err != nil {
+		WriteResult(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	go Event(id,8)
+
+	WriteResult(w, http.StatusOK, user)
+
 }
