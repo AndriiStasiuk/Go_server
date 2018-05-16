@@ -27,6 +27,7 @@ type User struct {
 	LastName        string      `sql:"last_name" json:"last_name"`
 	Status          string      `sql:"status" json:"status"`
 	LastCheckedIn   time.Time   `sql:"last_checked_in" json:"last_checked_in"`
+	Active          bool        `sql:"active" json:"active"`
 }
 
 
