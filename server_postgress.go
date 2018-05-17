@@ -58,8 +58,10 @@ func main() {
 	router.HandleFunc("/std/user", GetResources).Methods("GET")
 	router.HandleFunc("/std/user/{card_key}", GetResource).Methods("GET")
 	router.HandleFunc("/std/user", CreateResource).Methods("POST")
-	router.HandleFunc("/std/user/deactivate/{id}", DeactiveUser).Methods("PUT")
 	router.HandleFunc("/std/user/update/{id}", UpdateResource).Methods("PUT")
+	
+	router.HandleFunc("/std/user/deactivate/{id}", DeactiveUser).Methods("PUT")
+	router.HandleFunc("/std/user/activate/{id}", ActiveUser).Methods("PUT")
 	
 	router.HandleFunc("/std/user/blocked/{id}",BlockedUser).Methods("PUT")
 	router.HandleFunc("/std/user/unblocked/{id}",UnblockedUser).Methods("PUT")
@@ -334,6 +336,36 @@ func DeactiveUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go Event(id,8)
+
+	WriteResult(w, http.StatusOK, user)
+
+}
+
+
+func ActiveUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		WriteResult(w, http.StatusNotFound, err.Error())
+		return
+	}
+	var user User
+
+	user.Id = id
+
+	if err := db.First(&user).Error; err != nil {
+		WriteResult(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user.Active = true
+
+	if err := db.Save(&user).Error; err != nil {
+		WriteResult(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	go Event(id,10)
 
 	WriteResult(w, http.StatusOK, user)
 
