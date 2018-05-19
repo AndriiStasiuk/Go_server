@@ -100,7 +100,7 @@ func Event(UserId int64, EventType int) {
 
 func GetResources(w http.ResponseWriter, r *http.Request) {
 	var users []User
-	if err := db.Where("active = ?",true).Find(&users).Error; err != nil {
+	if err := db.Where("active = ?",true).Order("id ASC").Find(&users).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err.Error())
 		return
 	}
