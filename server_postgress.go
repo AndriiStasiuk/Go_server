@@ -25,7 +25,7 @@ type User struct {
 	CardKey         int64       `sql:"card_key" json:"card_key"`
 	FirstName       string      `sql:"first_name" json:"first_name"`
 	LastName        string      `sql:"last_name" json:"last_name"`
-	Status          string      `sql:"status" json:"status"`
+	Status          int64       `sql:"status" json:"status"`
 	LastCheckedIn   time.Time   `sql:"last_checked_in" json:"last_checked_in"`
 	Active          bool        `sql:"active" json:"active"`
 }
@@ -75,7 +75,6 @@ func main() {
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
 
 }
-
 func Options(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS, PATCH, DELETE")
@@ -170,6 +169,9 @@ func CreateResource(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	resource.Active = true
+	resource.Status = 1
+
 	if err := db.Create(&resource).Error; err != nil {
 		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
@@ -223,7 +225,7 @@ func BlockedUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.Status = "0"
+	user.Status = 0
 
 	if err := db.Save(&user).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err)
@@ -252,7 +254,7 @@ func UnblockedUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.Status = "1"
+	user.Status = 1
 
 	if err := db.Save(&user).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err)
@@ -283,7 +285,7 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resource.Status == "1" {
+	if resource.Status == 1 {
 
 		if resource.Active == true{
 			resource.LastCheckedIn = time.Now()
@@ -340,7 +342,6 @@ func DeactiveUser(w http.ResponseWriter, r *http.Request) {
 	WriteResult(w, http.StatusOK, user)
 
 }
-
 
 func ActiveUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
