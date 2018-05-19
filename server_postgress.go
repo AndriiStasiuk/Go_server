@@ -20,15 +20,15 @@ type Log struct	{
 }
 
 type User struct {
-
-	Id              int64       `sql:"id" json:"id"`
-	CardKey         int64       `sql:"card_key" json:"card_key"`
-	FirstName       string      `sql:"first_name" json:"first_name"`
-	LastName        string      `sql:"last_name" json:"last_name"`
-	Status          int64       `sql:"status" json:"status"`
-	LastCheckedIn   time.Time   `sql:"last_checked_in" json:"last_checked_in"`
-	Active          bool        `sql:"active" json:"active"`
+	Id            int64      `gorm:"primary_key" json:"id"`
+	CardKey       int64      `sql:"card_key" json:"card_key"`
+	FirstName     string     `sql:"first_name" json:"first_name"`
+	LastName      string     `sql:"last_name" json:"last_name"`
+	Status        int64      `gorm:"default:1" sql:"status" json:"status"`
+	LastCheckedIn *time.Time `sql:"last_checked_in" json:"last_checked_in,omitempty"`
+	Active        *bool      `gorm:"default:true" sql:"active" json:"active"`
 }
+
 
 
 var db  *gorm.DB
@@ -75,6 +75,7 @@ func main() {
 	http.ListenAndServe(":" + os.Getenv("PORT"), router)
 
 }
+
 func Options(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS, PATCH, DELETE")
@@ -99,7 +100,7 @@ func Event(UserId int64, EventType int) {
 
 func GetResources(w http.ResponseWriter, r *http.Request) {
 	var users []User
-	if err := db.Where("active = ?",true).Order("id ASC").Find(&users).Error; err != nil {
+	if err := db.Where("active = ?", true).Order("id ASC").Find(&users).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -169,19 +170,15 @@ func CreateResource(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	resource.Active = true
-	resource.Status = 1
-
 	if err := db.Create(&resource).Error; err != nil {
 		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	go Event(resource.Id,6)
+	go Event(resource.Id, 6)
 
 	WriteResult(w, http.StatusOK, resource)
 }
-
 
 func UpdateResource(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -204,7 +201,7 @@ func UpdateResource(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusInternalServerError, err)
 		return
 	}
-	go Event(id,7)
+	go Event(id, 7)
 
 	WriteResult(w, http.StatusOK, resource)
 }
@@ -232,7 +229,7 @@ func BlockedUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go Event(id,4)
+	go Event(id, 4)
 
 	WriteResult(w, http.StatusOK, user)
 
@@ -261,7 +258,7 @@ func UnblockedUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go Event(id,5)
+	go Event(id, 5)
 
 	WriteResult(w, http.StatusOK, user)
 }
@@ -279,7 +276,7 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 
 	if err := db.Where("card_key = ?", resource.CardKey).First(&resource).Error; err != nil {
 
-		go Event(0,3)
+		go Event(0, 3)
 
 		WriteResult(w, http.StatusNotFound, nil)
 		return
@@ -287,20 +284,21 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 
 	if resource.Status == 1 {
 
-		if resource.Active == true{
-			resource.LastCheckedIn = time.Now()
+		if resource.Active != nil && *resource.Active == true {
+			moment := time.Now()
+			resource.LastCheckedIn = &moment
 			if err := db.Save(&resource).Error; err != nil {
 				WriteResult(w, http.StatusInternalServerError, err)
 				return
 			}
 
-			go Event(resource.Id,1)
+			go Event(resource.Id, 1)
 
 			WriteResult(w, http.StatusOK, nil)
 		}
 	} else {
 
-		go Event(resource.Id,2)
+		go Event(resource.Id, 2)
 
 		WriteResult(w, http.StatusForbidden, nil)
 	}
@@ -309,7 +307,7 @@ func AuthUser(w http.ResponseWriter, r *http.Request) {
 
 func UserExit(w http.ResponseWriter, r *http.Request) {
 
-	go Event(0,9)
+	go Event(0, 9)
 
 	WriteResult(w, http.StatusOK, nil)
 }
@@ -329,15 +327,15 @@ func DeactiveUser(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	user.Active = false
+	active := false
+	user.Active = &active
 
 	if err := db.Save(&user).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	go Event(id,8)
+	go Event(id, 8)
 
 	WriteResult(w, http.StatusOK, user)
 
@@ -358,15 +356,15 @@ func ActiveUser(w http.ResponseWriter, r *http.Request) {
 		WriteResult(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	user.Active = true
+	active := true
+	user.Active = &active
 
 	if err := db.Save(&user).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	go Event(id,10)
+	go Event(id, 10)
 
 	WriteResult(w, http.StatusOK, user)
 
