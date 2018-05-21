@@ -13,7 +13,7 @@ import (
 )
 
 type Log struct	{
-	Id		int64		`gorm:"primary_key" json:"id"``
+	Id		int64		`sql:"id"`
 	UserId		int64		`sql:"user_id"`
 	CreatedAt	time.Time	`sql:"created_at"`
 	EventType	int		`sql:"event_type"`
