@@ -13,7 +13,7 @@ import (
 )
 
 type Log struct	{
-	Id		int64		`sql:"id"`
+	Id		int64		`gorm:"primary_key" json:"id"``
 	UserId		int64		`sql:"user_id"`
 	CreatedAt	time.Time	`sql:"created_at"`
 	EventType	int		`sql:"event_type"`
@@ -129,7 +129,7 @@ func GetLog(w http.ResponseWriter, r *http.Request) {
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
 	var logs []Log
-	if err := db.Find(&logs).Order("id ASC").Error; err != nil {
+	if err := db.Find(&logs).Order("id DESC").Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err.Error())
 		return
 	}
