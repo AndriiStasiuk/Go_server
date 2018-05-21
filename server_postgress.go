@@ -129,7 +129,7 @@ func GetLog(w http.ResponseWriter, r *http.Request) {
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
 	var logs []Log
-	if err := db.Find(&logs).Order("id DESC").Error; err != nil {
+	if err := db.Order("id DESC").Find(&logs).Error; err != nil {
 		WriteResult(w, http.StatusInternalServerError, err.Error())
 		return
 	}
